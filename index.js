@@ -7,22 +7,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuración de la base de datos MySQL
-const db = mysql.createConnection({
+// Configuración del pool de conexiones MySQL
+const db = mysql.createPool({
     host: "b0cjyt4hyfsobbbxc04p-mysql.services.clever-cloud.com",
     user: "usrweyh3z65hle1p",
     password: "arlNRzFJJ7WbqossOnzP",
     database: "b0cjyt4hyfsobbbxc04p",
     port: 3306,
+    waitForConnections: true,
+    connectionLimit: 10, // Ajusta según la carga esperada
+    queueLimit: 0,
 });
 
-// Conexión a la base de datos
-db.connect((err) => {
+// Probar la conexión al iniciar el servidor
+db.getConnection((err, connection) => {
     if (err) {
-        console.error("Error al conectar a MySQL:", err);
-        return;
+        console.error("Error al conectar al pool de MySQL:", err);
+        process.exit(1); // Finaliza la aplicación si hay un problema
+    } else {
+        console.log("Conexión al pool de MySQL establecida");
+        connection.release(); // Libera la conexión de prueba
     }
-    console.log("Conectado a MySQL en Clever Cloud");
 });
 
 // Crear tabla de usuarios si no existe
@@ -34,7 +39,11 @@ db.query(
         password VARCHAR(255) NOT NULL
     )`,
     (err) => {
-        if (err) console.error("Error al crear tabla:", err);
+        if (err) {
+            console.error("Error al crear tabla:", err);
+        } else {
+            console.log("Tabla de usuarios verificada/creada");
+        }
     }
 );
 
