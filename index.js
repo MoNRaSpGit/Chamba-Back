@@ -38,25 +38,6 @@ db.query(
     }
 );
 
-// Endpoint para ping
-app.get("/", (req, res) => {
-    res.send("Servidor activo");
-});
-
-// Mantener el servidor activo con un autoping
-const startKeepAlive = () => {
-    setInterval(() => {
-        const https = require("https");
-        const url = "https://chamba-back.onrender.com"; // URL pública de Render
-
-        https.get(url, (res) => {
-            console.log(`Ping al servidor - Status: ${res.statusCode}`);
-        }).on("error", (err) => {
-            console.error("Error al hacer ping:", err.message);
-        });
-    }, 5 * 60 * 1000); // Cada 5 minutos
-};
-
 // Endpoint para registrar usuarios
 app.post("/register", (req, res) => {
     const { username, email, password } = req.body;
@@ -94,7 +75,6 @@ app.get("/user-count", (req, res) => {
 });
 
 // Iniciar el servidor
-startKeepAlive(); // Iniciar el autoping
 const PORT = 3001;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
