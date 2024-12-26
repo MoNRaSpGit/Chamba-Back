@@ -51,7 +51,7 @@ app.post("/register", (req, res) => {
     // Insertar los datos directamente en la base de datos
     db.query(
         "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-        [username, email, password], // Guardar directamente la contraseña
+        [username, email, password],
         (err) => {
             if (err) {
                 if (err.code === "ER_DUP_ENTRY") {
@@ -60,25 +60,6 @@ app.post("/register", (req, res) => {
                 return res.status(500).json({ error: "Error al registrar usuario" });
             }
             res.json({ message: "Usuario registrado exitosamente" });
-        }
-    );
-});
-
-// Endpoint para iniciar sesión
-app.post("/login", (req, res) => {
-    const { email, password } = req.body;
-
-    db.query(
-        "SELECT * FROM users WHERE email = ? AND password = ?",
-        [email, password], // Comparar directamente con la contraseña almacenada
-        (err, results) => {
-            if (err) {
-                return res.status(500).json({ error: "Error en el servidor" });
-            }
-            if (results.length === 0) {
-                return res.status(404).json({ error: "Usuario no encontrado o contraseña incorrecta" });
-            }
-            res.json({ message: "Inicio de sesión exitoso", username: results[0].username });
         }
     );
 });
