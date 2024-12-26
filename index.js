@@ -43,77 +43,55 @@ db.query(
 
 
 
-
-// Endpoint para registrar usuarios
-app.post("/register", async (req, res) => {
-  try {
+app.post("/register", (req, res) => {
     const { username, email, password } = req.body;
-
-    // Log de los datos recibidos
-    console.log("Datos recibidos en el registro:", { username, email, password });
-
-    // Validación de datos
+  
+    // Validar datos
     if (!username || !email || !password) {
-      console.error("Datos incompletos en el registro");
       return res.status(400).json({ error: "Todos los campos son obligatorios" });
     }
-
-    // Encriptar la contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Contraseña encriptada:", hashedPassword);
-
-    // Insertar datos en la base de datos
+  
+    // Insertar los datos directamente en la base de datos
     db.query(
       "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-      [username, email, hashedPassword],
+      [username, email, password], // Guardar directamente la contraseña
       (err) => {
         if (err) {
-          // Error por correo duplicado
           if (err.code === "ER_DUP_ENTRY") {
-            console.error("Error: El correo ya está registrado");
             return res.status(400).json({ error: "El correo ya está registrado" });
           }
-          // Otro error
-          console.error("Error al insertar en la base de datos:", err);
           return res.status(500).json({ error: "Error al registrar usuario" });
-        } else {
-          console.log("Usuario registrado exitosamente:", { username, email });
-          res.json({ message: "Usuario registrado exitosamente" });
         }
+        res.json({ message: "Usuario registrado exitosamente" });
       }
     );
-  } catch (error) {
-    console.error("Error inesperado en el registro:", error);
-    res.status(500).json({ error: "Error inesperado en el servidor" });
-  }
-});
+  });
+  
 
   
 
 
-
-// Endpoint para iniciar sesión
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-
-  db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
-    if (err) {
-      res.status(500).json({ error: "Error en el servidor" });
-    } else if (results.length === 0) {
-      res.status(404).json({ error: "Usuario no encontrado" });
-    } else {
-      const user = results[0];
-      const isMatch = await bcrypt.compare(password, user.password);
-
-      if (isMatch) {
-        res.json({ message: "Inicio de sesión exitoso", username: user.username });
-      } else {
-        res.status(400).json({ error: "Contraseña incorrecta" });
+  app.post("/login", (req, res) => {
+    const { email, password } = req.body;
+  
+    db.query(
+      "SELECT * FROM users WHERE email = ? AND password = ?",
+      [email, password], // Comparar directamente con la contraseña almacenada
+      (err, results) => {
+        if (err) {
+          return res.status(500).json({ error: "Error en el servidor" });
+        }
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Usuario no encontrado o contraseña incorrecta" });
+        }
+        res.json({ message: "Inicio de sesión exitoso", username: results[0].username });
       }
-    }
+    );
   });
-});
 
+
+  
+  
 // Endpoint para contar usuarios registrados
 app.get("/user-count", (req, res) => {
   db.query("SELECT COUNT(*) AS count FROM users", (err, results) => {
