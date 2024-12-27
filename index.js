@@ -30,36 +30,53 @@ db.getConnection((err, connection) => {
     }
 });
 
-// Crear tabla de usuarios si no existe
-db.query(
-    `CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL
-    )`,
-    (err) => {
-        if (err) {
-            console.error("Error al crear tabla:", err);
-        } else {
-            console.log("Tabla de usuarios verificada/creada");
-        }
+app.post("/login", (req, res) => {
+    const { username, password } = req.body;
+
+    // Validar datos
+    if (!username || !password) {
+        return res.status(400).json({ error: "Todos los campos son obligatorios" });
     }
-);
+
+    // Verificar credenciales en la base de datos
+    db.query(
+        "SELECT id, username, email, address, role FROM users WHERE username = ? AND password = ?",
+        [username, password],
+        (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: "Error en el servidor" });
+            }
+
+            if (results.length === 0) {
+                return res.status(401).json({ error: "Credenciales inválidas" });
+            }
+
+            // Usuario encontrado, devolver sus datos
+            const user = results[0];
+            res.json({ user });
+        }
+    );
+});
+
 
 // Endpoint para registrar usuarios
 app.post("/register", (req, res) => {
-    const { username, email, password } = req.body;
+    const { username, email, password, address, role } = req.body;
 
     // Validar datos
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !address || !role) {
         return res.status(400).json({ error: "Todos los campos son obligatorios" });
+    }
+
+    // Validar el rol
+    if (!["user", "worker"].includes(role)) {
+        return res.status(400).json({ error: "Rol inválido" });
     }
 
     // Insertar los datos directamente en la base de datos
     db.query(
-        "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-        [username, email, password],
+        "INSERT INTO users (username, email, password, address, role) VALUES (?, ?, ?, ?, ?)",
+        [username, email, password, address, role],
         (err) => {
             if (err) {
                 if (err.code === "ER_DUP_ENTRY") {
@@ -71,6 +88,8 @@ app.post("/register", (req, res) => {
         }
     );
 });
+
+
 
 // Endpoint para contar usuarios registrados
 app.get("/user-count", (req, res) => {
